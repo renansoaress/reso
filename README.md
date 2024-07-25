@@ -1,3 +1,3 @@
-# reso
+# ReSo
 
 A new Flutter `ReSo :)`
