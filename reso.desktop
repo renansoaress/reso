@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ReSo
+Exec=/home/renan/projects/testes/reso/build/linux/x64/release/bundle/reso
+Icon=/home/renan/projects/testes/reso/assets/icon/icon.png
+Comment="ReSo :)"
+Categories=Utility;
+Terminal=false
+StartupNotify=true;

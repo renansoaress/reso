@@ -39,6 +39,7 @@ class HashPage extends StatefulWidget {
 
 class _HashPageState extends State<HashPage> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   String _hash = '';
 
   final symbols = const ["!", "@", "#", "\$", "%", "&", "*", "+", "-"];
@@ -48,12 +49,17 @@ class _HashPageState extends State<HashPage> {
   void initState() {
     super.initState();
     _controller.addListener(_updateHash);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
+    });
   }
 
   @override
   void dispose() {
     _controller.removeListener(_updateHash);
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -64,8 +70,8 @@ class _HashPageState extends State<HashPage> {
         _hash = '';
       });
     } else {
-      final bytes = utf8.encode(input); // Converte o input em bytes
-      final digest = md5.convert(bytes); // Gera o hash MD5
+      final bytes = utf8.encode(input);
+      final digest = md5.convert(bytes);
       String hashStr = digest.toString();
       String mySymbolInitial =
           symbols[hashStr.codeUnitAt(hashStr.length - 1) % symbols.length];
@@ -213,15 +219,16 @@ class _HashPageState extends State<HashPage> {
                   ),
                   TextField(
                     controller: _controller,
+                    focusNode: _focusNode,
                     decoration: const InputDecoration(
-                      labelText: 'Digite o texto',
+                      labelText: 'Digite o texto :)',
                       border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   if (_hash.isNotEmpty)
                     Card(
-                      elevation: 4, // Define a elevação do Card
+                      elevation: 4,
                       margin: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
