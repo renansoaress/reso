@@ -109,14 +109,17 @@ class _HashPageState extends State<HashPage> {
       while (positions.contains(positionMyUpperFinal)) {
         positionMyUpperFinal = (positionMyUpperFinal + 1) % length;
       }
+      positions.add(positionMyUpperFinal);
 
       while (positions.contains(positionMyLowerInitial)) {
         positionMyLowerInitial = (positionMyLowerInitial + 1) % length;
       }
+      positions.add(positionMyLowerInitial);
 
       while (positions.contains(positionMyLowerFinal)) {
         positionMyLowerFinal = (positionMyLowerFinal + 1) % length;
       }
+      // positions.add(positionMyLowerFinal);
 
       List<String> resultList = result.split('');
 
