@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'themes.dart';
 
@@ -16,12 +18,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'ReSo',
-      // theme: ThemeData.light(), // Define o tema claro
-      // darkTheme: ThemeData.dark(), // Define o tema escuro
-      theme: lightTheme, // Use o tema claro importado
-      darkTheme: darkTheme, // Use o tema escuro importado
-      themeMode: ThemeMode
-          .system, // Define o modo de tema com base nas preferências do sistema
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.system,
       home: const HashPage(),
     );
   }
@@ -38,25 +37,29 @@ class _HashPageState extends State<HashPage> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String _hash = '';
-  bool _obscureText =
-      true; // Adiciona uma variável para gerenciar a visibilidade do texto
+  bool _obscureText = true;
+  String _version = '0.0.0';
 
   final symbols = const ["!", "@", "#", "\$", "%", "&", "*", "+", "-"];
   final alphabet = "abcdefghijklmnopqrstuvwxyz";
-  final String _version = '1.0.0'; // Defina a versão atual do software
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_updateHash);
 
-    // Solicite o foco após a construção do widget
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).requestFocus(_focusNode);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (defaultTargetPlatform != TargetPlatform.iOS &&
+          defaultTargetPlatform != TargetPlatform.android) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
 
-    // Carregar o estado do botão de visualizar
-    _loadPreferences();
+      // Carregar a versão do app
+      await _loadAppVersion();
+
+      // Carregar o estado do botão de visualizar
+      await _loadPreferences();
+    });
   }
 
   @override
@@ -67,17 +70,23 @@ class _HashPageState extends State<HashPage> {
     super.dispose();
   }
 
+  Future<void> _loadAppVersion() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _version = packageInfo.version;
+    });
+  }
+
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _obscureText = prefs.getBool('obscureText') ??
-          true; // Carrega o estado salvo ou usa true por padrão
+      _obscureText = prefs.getBool('obscureText') ?? true;
     });
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('obscureText', _obscureText); // Salva o estado atual
+    prefs.setBool('obscureText', _obscureText);
   }
 
   void _updateHash() {
@@ -87,8 +96,8 @@ class _HashPageState extends State<HashPage> {
         _hash = '';
       });
     } else {
-      final bytes = utf8.encode(input); // Converte o input em bytes
-      final digest = md5.convert(bytes); // Gera o hash MD5
+      final bytes = utf8.encode(input);
+      final digest = md5.convert(bytes);
       String hashStr = digest.toString();
       String mySymbolInitial =
           symbols[hashStr.codeUnitAt(hashStr.length - 1) % symbols.length];
@@ -142,7 +151,6 @@ class _HashPageState extends State<HashPage> {
       while (positions.contains(positionMyLowerFinal)) {
         positionMyLowerFinal = (positionMyLowerFinal + 1) % length;
       }
-      // positions.add(positionMyLowerFinal);
 
       List<String> resultList = result.split('');
 
@@ -163,8 +171,8 @@ class _HashPageState extends State<HashPage> {
 
   void _toggleObscureText() {
     setState(() {
-      _obscureText = !_obscureText; // Alterna a visibilidade do texto
-      _savePreferences(); // Salva o estado ao alternar
+      _obscureText = !_obscureText;
+      _savePreferences();
     });
   }
 
@@ -185,7 +193,7 @@ class _HashPageState extends State<HashPage> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.6,
+                width: MediaQuery.of(context).size.width * 0.7,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -195,7 +203,6 @@ class _HashPageState extends State<HashPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Label com fontes diferentes para cada letra
                             RichText(
                               text: const TextSpan(
                                 children: [
@@ -204,7 +211,7 @@ class _HashPageState extends State<HashPage> {
                                     style: TextStyle(
                                       fontStyle: FontStyle.italic,
                                       fontSize: 60,
-                                      fontFamily: 'Arial', // Fonte para 'R'
+                                      fontFamily: 'Arial',
                                       fontWeight: FontWeight.bold,
                                       color: Colors.blue,
                                     ),
@@ -213,8 +220,7 @@ class _HashPageState extends State<HashPage> {
                                     text: 'e',
                                     style: TextStyle(
                                       fontSize: 60,
-                                      fontFamily:
-                                          'Courier New', // Fonte para 'e'
+                                      fontFamily: 'Courier New',
                                       color: Colors.green,
                                     ),
                                   ),
@@ -222,8 +228,7 @@ class _HashPageState extends State<HashPage> {
                                     text: 'S',
                                     style: TextStyle(
                                       fontSize: 60,
-                                      fontFamily:
-                                          'Times New Roman', // Fonte para 'S'
+                                      fontFamily: 'Times New Roman',
                                       fontWeight: FontWeight.bold,
                                       color: Colors.red,
                                     ),
@@ -232,7 +237,7 @@ class _HashPageState extends State<HashPage> {
                                     text: 'o',
                                     style: TextStyle(
                                       fontSize: 60,
-                                      fontFamily: 'Helvetica', // Fonte para 'o'
+                                      fontFamily: 'Helvetica',
                                       fontWeight: FontWeight.bold,
                                       color: Colors.purple,
                                     ),
@@ -247,8 +252,7 @@ class _HashPageState extends State<HashPage> {
                     TextField(
                       controller: _controller,
                       focusNode: _focusNode,
-                      obscureText:
-                          _obscureText, // Define se o texto deve ser oculto
+                      obscureText: _obscureText,
                       decoration: InputDecoration(
                         labelText: 'Digite o texto :)',
                         border: const OutlineInputBorder(),
@@ -264,30 +268,31 @@ class _HashPageState extends State<HashPage> {
                     ),
                     const SizedBox(height: 16),
                     if (_hash.isNotEmpty)
-                      Card(
-                        elevation: 4,
-                        margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: SelectableText(
-                                  _hash,
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
+                      SizedBox(
+                        child: Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: SelectableText(
+                                    _hash,
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.normal),
+                                  ),
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.copy),
-                                onPressed: _copyToClipboard,
-                              ),
-                            ],
+                                IconButton(
+                                  icon: const Icon(Icons.copy),
+                                  onPressed: _copyToClipboard,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      )
                   ],
                 ),
               ),
