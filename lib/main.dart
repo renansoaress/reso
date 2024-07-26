@@ -71,13 +71,63 @@ class _HashPageState extends State<HashPage> {
           symbols[hashStr.codeUnitAt(hashStr.length - 1) % symbols.length];
       String mySymbolFinal =
           symbols[hashStr.codeUnitAt(hashStr.length - 2) % symbols.length];
-      String myUpper = alphabet.toUpperCase()[
+      String myUpperInitial = alphabet.toUpperCase()[
           hashStr.codeUnitAt(hashStr.length - 3) % alphabet.length];
-      String myLower =
-          alphabet[hashStr.codeUnitAt(hashStr.length - 4) % alphabet.length];
-      String result =
-          '$mySymbolInitial${hashStr.substring(0, 8)}$mySymbolFinal$myUpper$myLower';
-      // print(hashStr);
+      String myUpperFinal = alphabet.toUpperCase()[
+          hashStr.codeUnitAt(hashStr.length - 4) % alphabet.length];
+      String myLowerInitial =
+          alphabet[hashStr.codeUnitAt(hashStr.length - 5) % alphabet.length];
+      String myLowerFinal =
+          alphabet[hashStr.codeUnitAt(hashStr.length - 6) % alphabet.length];
+      String result = hashStr.substring(0, 12);
+
+      int length = result.length;
+
+      int positionSymbolInitial =
+          hashStr.codeUnitAt(hashStr.length - 1) % length;
+      int positionSymbolFinal = hashStr.codeUnitAt(hashStr.length - 2) % length;
+      int positionMyUpperInitial =
+          hashStr.codeUnitAt(hashStr.length - 3) % length;
+      int positionMyUpperFinal =
+          hashStr.codeUnitAt(hashStr.length - 4) % length;
+      int positionMyLowerInitial =
+          hashStr.codeUnitAt(hashStr.length - 5) % length;
+      int positionMyLowerFinal =
+          hashStr.codeUnitAt(hashStr.length - 6) % length;
+
+      Set<int> positions = {positionSymbolInitial};
+      while (positions.contains(positionSymbolFinal)) {
+        positionSymbolFinal = (positionSymbolFinal + 1) % length;
+      }
+      positions.add(positionSymbolFinal);
+
+      while (positions.contains(positionMyUpperInitial)) {
+        positionMyUpperInitial = (positionMyUpperInitial + 1) % length;
+      }
+      positions.add(positionMyUpperInitial);
+
+      while (positions.contains(positionMyUpperFinal)) {
+        positionMyUpperFinal = (positionMyUpperFinal + 1) % length;
+      }
+
+      while (positions.contains(positionMyLowerInitial)) {
+        positionMyLowerInitial = (positionMyLowerInitial + 1) % length;
+      }
+
+      while (positions.contains(positionMyLowerFinal)) {
+        positionMyLowerFinal = (positionMyLowerFinal + 1) % length;
+      }
+
+      List<String> resultList = result.split('');
+
+      resultList[positionSymbolInitial] = mySymbolInitial;
+      resultList[positionSymbolFinal] = mySymbolFinal;
+      resultList[positionMyUpperInitial] = myUpperInitial;
+      resultList[positionMyUpperFinal] = myUpperFinal;
+      resultList[positionMyLowerInitial] = myLowerInitial;
+      resultList[positionMyLowerFinal] = myLowerFinal;
+
+      result = resultList.join('');
 
       setState(() {
         _hash = result;
