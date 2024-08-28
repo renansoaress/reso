@@ -40,6 +40,9 @@ class _HashPageState extends State<HashPage> {
   bool _obscureText = true;
   String _version = '0.0.0';
 
+  bool _modalObscureText = true; // Controla o estado do campo no modal
+  final TextEditingController _modalController = TextEditingController();
+
   final symbols = const ["!", "@", "#", "\$", "%", "&", "*", "+", "-"];
   final alphabet = "abcdefghijklmnopqrstuvwxyz";
 
@@ -81,24 +84,43 @@ class _HashPageState extends State<HashPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _obscureText = prefs.getBool('obscureText') ?? true;
+      _modalObscureText = prefs.getBool('modalObscureText') ?? true;
+      _modalController.text = prefs.getString('modalText') ?? '';
     });
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool('obscureText', _obscureText);
+    prefs.setBool('modalObscureText', _modalObscureText);
+    prefs.setString('modalText', _modalController.text);
   }
 
   void _updateHash() {
     final input = _controller.text;
+    final inputModal = _modalController.text;
     if (input.isEmpty) {
       setState(() {
         _hash = '';
       });
     } else {
-      final bytes = utf8.encode(input);
-      final digest = md5.convert(bytes);
-      String hashStr = digest.toString();
+      String hashStr = "";
+      if(inputModal.isNotEmpty)
+      {
+        final bytesModal = utf8.encode(inputModal);
+        final digestModal = md5.convert(bytesModal);
+
+        final bytes = utf8.encode(input);
+        final digest = md5.convert(bytes);
+
+        final digestAll = md5.convert(digestModal.bytes + digest.bytes);
+        hashStr = digestAll.toString();
+      } else {
+        final bytes = utf8.encode(input);
+        final digest = md5.convert(bytes);
+        hashStr = digest.toString();
+      }
+
       String mySymbolInitial =
           symbols[hashStr.codeUnitAt(hashStr.length - 1) % symbols.length];
       String mySymbolFinal =
@@ -176,11 +198,68 @@ class _HashPageState extends State<HashPage> {
     });
   }
 
+  void _toggleModalObscureText() {
+    setState(() {
+      _modalObscureText = !_modalObscureText;
+    });
+  }
+
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: _hash));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
           content: Text('ReSo copiado para a área de transferência!')),
+    );
+  }
+
+  void _openSettingsModal(BuildContext context) {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Configurações'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _modalController,
+                    obscureText: _modalObscureText,
+                    decoration: InputDecoration(
+                      labelText: 'Digite a chave :X',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _modalObscureText
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _modalObscureText = !_modalObscureText;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _controller.clear();
+                _savePreferences(); // Salva as preferências ao fechar o modal
+                Navigator.of(context).pop();
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -296,6 +375,14 @@ class _HashPageState extends State<HashPage> {
                   ],
                 ),
               ),
+            ),
+          ),
+          Positioned(
+            top: 16.0,
+            right: 16.0,
+            child: IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () => _openSettingsModal(context),
             ),
           ),
           Align(
