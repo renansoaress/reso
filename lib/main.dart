@@ -212,8 +212,8 @@ class _HashPageState extends State<HashPage> {
     );
   }
 
-  void _openSettingsModal(BuildContext context) {
-    showDialog(
+  Future<void> _openSettingsModal(BuildContext context) async {
+    await showDialog(
       barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
@@ -261,6 +261,13 @@ class _HashPageState extends State<HashPage> {
         );
       },
     );
+  }
+
+  void _handleSettings(BuildContext context) async {
+    await _openSettingsModal(context);
+    
+    // Agora que o modal foi fechado, podemos focar no TextField
+    FocusScope.of(context).requestFocus(_focusNode);
   }
 
   @override
@@ -380,9 +387,26 @@ class _HashPageState extends State<HashPage> {
           Positioned(
             top: 16.0,
             right: 16.0,
-            child: IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () => _openSettingsModal(context),
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () => _handleSettings(context),
+                ),
+                if (_modalController.text.isNotEmpty)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           Align(
