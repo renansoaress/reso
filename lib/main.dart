@@ -105,8 +105,7 @@ class _HashPageState extends State<HashPage> {
       });
     } else {
       String hashStr = "";
-      if(inputModal.isNotEmpty)
-      {
+      if (inputModal.isNotEmpty) {
         final bytesModal = utf8.encode(inputModal);
         final digestModal = md5.convert(bytesModal);
 
@@ -265,9 +264,11 @@ class _HashPageState extends State<HashPage> {
 
   void _handleSettings(BuildContext context) async {
     await _openSettingsModal(context);
-    
-    // Agora que o modal foi fechado, podemos focar no TextField
-    FocusScope.of(context).requestFocus(_focusNode);
+
+    if (defaultTargetPlatform != TargetPlatform.iOS &&
+        defaultTargetPlatform != TargetPlatform.android) {
+      FocusScope.of(context).requestFocus(_focusNode);
+    }
   }
 
   @override
