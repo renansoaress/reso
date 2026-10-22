@@ -2,7 +2,7 @@ name: reso
 description: "ReSo :)"
 publish_to: 'none'
 # A versao mora aqui. Os scripts de tool/ copiam para lib/version.dart.
-version: 2.0.2
+version: 2.1.0
 
 environment:
   sdk: ^3.8.0

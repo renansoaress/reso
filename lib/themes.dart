@@ -42,7 +42,7 @@ ThemeData _build(Brightness brightness) {
     scaffoldBackgroundColor: scheme.surface,
     extensions: [brand],
     visualDensity: VisualDensity.standard,
-    splashFactory: InkSparkle.splashFactory,
+    splashFactory: InkRipple.splashFactory,
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: scheme.surfaceContainerLowest,
