@@ -1,0 +1,6 @@
+{
+  "server": "usuario@seu-servidor.com",
+  "port": 22,
+  "updatePath": "caminho/da/pasta/publica/reso",
+  "webPath": "caminho/da/pasta/reso_web"
+}

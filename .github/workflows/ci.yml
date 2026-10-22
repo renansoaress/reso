@@ -1,0 +1,51 @@
+# Verificacao do ReSo em todo push e pull request: formatacao, analise
+# estatica e testes (inclusive o que trava o ReSo gerado de sempre).
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+env:
+  # A mesma versao do Flutter usada nos builds locais (tool/release.ps1).
+  FLUTTER_VERSION: '3.47.5'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+      - name: Formatacao
+        run: dart format --output=none --set-exit-if-changed lib test tool
+      - name: Analise
+        run: flutter analyze
+      - name: Testes
+        run: flutter test
+
+  web:
+    # A web e o que mais quebra calado (wasm, service worker): compila em todo
+    # push para descobrir antes da tag.
+    runs-on: ubuntu-latest
+    needs: testes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: bash tool/build_web.sh

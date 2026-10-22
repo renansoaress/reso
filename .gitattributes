@@ -1,0 +1,2 @@
+# Os scripts do Linux rodam no WSL direto desta pasta: CRLF quebraria o bash.
+*.sh text eol=lf

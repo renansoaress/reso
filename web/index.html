@@ -1,38 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
+  <!-- Trocado pelo --base-href do `flutter build web` (tool/build_web). -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ReSo: digite o texto, copie o ReSo.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F4F5F9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0E1016" media="(prefers-color-scheme: dark)">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Instalavel no Android (Chrome) e no iPhone (Safari > Compartilhar >
+       Adicionar a Tela de Inicio). -->
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="reso">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>reso</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ReSo">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
+
+  <title>ReSo</title>
+
+  <style>
+    :root { --bg: #F4F5F9; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0E1016; } }
+    :root[data-theme="light"] { --bg: #F4F5F9; }
+    :root[data-theme="dark"] { --bg: #0E1016; }
+    html, body { margin: 0; height: 100%; background: var(--bg); }
+    #splash {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: var(--bg); transition: opacity .25s ease; z-index: 10;
+    }
+    #splash img {
+      width: 96px; height: 96px;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    #splash.done { opacity: 0; pointer-events: none; }
+    @keyframes pulse { 50% { transform: scale(.94); opacity: .75; } }
+    @media (prefers-reduced-motion: reduce) { #splash img { animation: none; } }
+  </style>
+  <script>
+    // O tema escolhido no app (gravado pelo shared_preferences) ja vale para
+    // a tela de carregamento: sem piscar o tema do sistema antes.
+    try {
+      var t = JSON.parse(localStorage.getItem('flutter.themeMode'));
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (_) {}
+  </script>
 </head>
 <body>
+  <div id="splash"><img src="icons/Icon-192.png" alt="ReSo"></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var s = document.getElementById('splash');
+      s.classList.add('done');
+      setTimeout(function () { s.remove(); }, 300);
+    });
+    // O sw.js e gerado no build (tool/make_sw.dart) e deixa o app abrir
+    // offline. No `flutter run` ele nao existe e o registro so falha calado.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

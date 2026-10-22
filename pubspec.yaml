@@ -1,22 +1,53 @@
 name: reso
-description: "A new Flutter ReSo :)"
+description: "ReSo :)"
 publish_to: 'none'
+# A versao mora aqui. Os scripts de tool/ copiam para lib/version.dart.
 version: 2.0.2
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: ^3.8.0
 
 dependencies:
   flutter:
     sdk: flutter
-  crypto: ^3.0.0
-  shared_preferences: ^2.2.3
-  package_info_plus: ^8.0.0
+  crypto: ^3.0.6
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
+
+  # Fontes livres (SIL OFL 1.1, ver assets/fonts/OFL.txt). As do logo e a da
+  # senha sao recortes so com os caracteres usados: poucos KB cada.
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-Bold.ttf
+          weight: 700
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+    - family: LogoR
+      fonts:
+        - asset: assets/fonts/Logo-R.ttf
+          weight: 800
+          style: italic
+    - family: LogoE
+      fonts:
+        - asset: assets/fonts/Logo-e.ttf
+          weight: 800
+    - family: LogoS
+      fonts:
+        - asset: assets/fonts/Logo-S.ttf
+          weight: 800
+    - family: LogoO
+      fonts:
+        - asset: assets/fonts/Logo-o.ttf
+          weight: 900

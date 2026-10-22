@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=ReSo
+Comment=Digite o texto, copie o ReSo
+Exec=reso
+Icon=reso
+Terminal=false
+StartupNotify=true
+# O APPLICATION_ID do linux/CMakeLists.txt: e por ele que o GNOME liga a
+# janela do ReSo a este atalho e ao icone dele.
+StartupWMClass=com.example.reso
+Categories=Utility;
+Keywords=senha;password;hash;

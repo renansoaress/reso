@@ -1,10 +1,13 @@
 [Unit]
-Description=Python HTTP Server (rodando ReSo flutter)
+Description=ReSo web (PWA)
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 -m http.server 5500
-WorkingDirectory=/root/projects/reso_web
+# O tool/release.ps1 publica a pasta e o servidor (reso_serve_web.py) a cada
+# versao e reinicia este servico. O serve_web.py serve o .wasm com o tipo
+# certo e os cabecalhos COOP/COEP do WebAssembly.
+ExecStart=/usr/bin/python3 /root/projects/reso_serve_web.py /root/projects/reso_web --port 5500
+WorkingDirectory=/root/projects
 Restart=always
 User=root
 

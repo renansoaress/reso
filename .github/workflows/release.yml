@@ -1,0 +1,214 @@
+# Release do ReSo no GitHub, a cada tag vX.Y.Z (o tool/release.ps1 cria e
+# empurra a tag no fim da publicacao).
+#
+#   git tag -a v2.1.0 -m "ReSo 2.1.0" -m "O que mudou."
+#   git push origin v2.1.0
+#
+# Compila as tres versoes em paralelo (Windows, Linux e web), anexa os
+# arquivos a Release e escreve a descricao: as notas da tag (o que vem depois
+# da primeira linha), a tabela com o link de cada versao e como instalar.
+#
+# A tag precisa bater com a versao do pubspec.yaml e do lib/version.dart: o
+# job `versao` reprova quando divergem, para nao sair um instalador chamado
+# 2.1.0 que por dentro se diz 2.0.2.
+#
+# Variavel opcional do repositorio (Settings > Variables > Actions):
+#   RESO_WEB_URL  endereco publico da versao web, para o link "abrir no
+#                 navegador" da Release.
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+env:
+  FLUTTER_VERSION: '3.47.5'
+
+permissions:
+  contents: write
+
+jobs:
+  versao:
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.v.outputs.versao }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VERSAO="${GITHUB_REF_NAME#v}"
+          PUBSPEC=$(sed -nE 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' pubspec.yaml | head -1)
+          echo "tag=$VERSAO pubspec=$PUBSPEC"
+          if [ "$PUBSPEC" != "$VERSAO" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME nao bate com a versao $PUBSPEC do pubspec.yaml"
+            exit 1
+          fi
+          if ! grep -q "appVersion = '$VERSAO'" lib/version.dart; then
+            echo "::error::lib/version.dart esta em outra versao (rode tool/sync_version)"
+            exit 1
+          fi
+          echo "versao=$VERSAO" >> "$GITHUB_OUTPUT"
+
+  testes:
+    runs-on: ubuntu-latest
+    needs: versao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  windows:
+    runs-on: windows-latest
+    needs: testes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+      - run: flutter pub get
+      - shell: pwsh
+        run: ./tool/build_installer.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/installer/reso-setup-*.exe
+
+  linux:
+    runs-on: ubuntu-latest
+    needs: testes
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencias do build Linux
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: bash tool/build_installer.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            build/installer/reso_*_amd64.deb
+            build/installer/reso-*-linux-x64.tar.gz
+
+  web:
+    runs-on: ubuntu-latest
+    needs: testes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: bash tool/build_web.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: build/installer/reso-web-*.tar.gz
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [versao, windows, linux, web]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: pacotes
+          merge-multiple: true
+
+      - name: Descricao
+        env:
+          VERSAO: ${{ needs.versao.outputs.versao }}
+          WEB_URL: ${{ vars.RESO_WEB_URL }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          # O checkout de uma tag nem sempre traz o objeto da tag anotada: busca
+          # de novo para ler a mensagem.
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          git for-each-ref "refs/tags/$GITHUB_REF_NAME" --format='%(contents:body)' |
+            sed -e 's/[[:space:]]*$//' > novidades.md
+
+          baixar="$REPO_URL/releases/download/$GITHUB_REF_NAME"
+          # A pasta publica da atualizacao, a mesma que o app consulta: a
+          # Release tambem aponta para os arquivos de la, quando estao no ar.
+          SERVIDOR_RESO=$(sed -nE "s|.*updateManifestUrl = '(.*)/latest\.json'.*|\1|p" lib/update/update_service.dart)
+          linha() { # nome do arquivo, plataforma
+            if [ -f "pacotes/$1" ]; then
+              servidor=''
+              if curl -fsI -o /dev/null "$SERVIDOR_RESO/$1"; then
+                servidor=" · [espelho]($SERVIDOR_RESO/$1)"
+              fi
+              echo "| $2 | [\`$1\`]($baixar/$1)$servidor |"
+            fi
+          }
+
+          {
+            if [ -s novidades.md ]; then
+              printf '## Novidades\n\n'
+              # Dois espacos no fim: a quebra de linha do Markdown.
+              sed -e 's/.$/&  /' novidades.md
+              printf '\n'
+            fi
+            printf '## Baixar\n\n| Plataforma | Arquivo |\n|---|---|\n'
+            linha "reso-setup-$VERSAO.exe" 'Windows'
+            linha "reso_${VERSAO}_amd64.deb" 'Linux (Debian/Ubuntu)'
+            linha "reso-$VERSAO-linux-x64.tar.gz" 'Linux (outras distros)'
+            linha "reso-web-$VERSAO.tar.gz" 'Web (PWA, para hospedar)'
+            if [ -n "$WEB_URL" ]; then
+              echo "| Web / iPhone / Android | [abrir no navegador]($WEB_URL) |"
+            fi
+            cat <<'NOTAS'
+
+          ## Instalar
+
+          **Windows**: rode o `reso-setup-*.exe`. Instala só para você, sem pedir
+          administrador, e daqui pra frente o ReSo avisa sozinho quando sair versão nova.
+
+          **Linux (Debian/Ubuntu)**: `sudo apt install ./reso_*_amd64.deb`
+
+          **Linux (outras distros)**: extraia o `.tar.gz` e rode `./install.sh`.
+
+          **iPhone e Android**: abra a versão web no navegador e use *Adicionar à Tela de
+          Início* (Safari: Compartilhar; Chrome: menu ⋮ > Instalar app). Depois da primeira
+          visita, funciona até offline.
+          NOTAS
+          } > notas.md
+          cat notas.md
+
+      - name: Publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSAO: ${{ needs.versao.outputs.versao }}
+        run: |
+          # Rodar de novo a mesma tag refaz a Release com os arquivos atuais, em
+          # vez de falhar.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "ReSo $VERSAO" --notes-file notas.md
+            gh release upload "$GITHUB_REF_NAME" pacotes/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" pacotes/* --title "ReSo $VERSAO" --notes-file notas.md --verify-tag
+          fi

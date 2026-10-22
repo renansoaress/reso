@@ -41,3 +41,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Servidor de publicacao do tool/release.ps1: fica so na maquina de quem publica.
+/tool/release.local.json
